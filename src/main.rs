@@ -1,7 +1,28 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
 use axum::{extract::{Path, State}, http::StatusCode,routing::{get, post}, Router};
+use std::fs::OpenOptions;
+use std::io::Write;
+
 
 type Db = Arc<Mutex<HashMap<String, String>>>;
+
+fn append(entry: &str) {
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("db.log")
+        .unwrap();
+    writeln!(file, "{}", entry).unwrap()
+}
+
+fn load() -> HashMap<String, String> {
+    let mut store = HashMap::new();
+    if let Ok(content) = std::fs::read_to_string("db_log") {
+        for line in content.lines() {
+            let mut parts = line.splitn(2, ' ');
+        }
+    }
+}
 
 async fn get_key(State(db): State<Db>, Path(key):  Path<String>) -> Result<String, StatusCode> {
     let db = db.lock().unwrap();
