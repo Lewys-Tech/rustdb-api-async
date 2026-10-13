@@ -20,6 +20,17 @@ fn load() -> HashMap<String, String> {
     if let Ok(content) = std::fs::read_to_string("db_log") {
         for line in content.lines() {
             let mut parts = line.splitn(2, ' ');
+            let op = parts.next().unwrap_or("");
+            let rest = parts.next().unwrap_or("");
+            match op {
+                "SET" => {
+                    let mut p = rest.splitn(2, ' ');
+                    let key = p.next().unwrap_or("").to_string();
+                    let value = p.next().unwrap_or("").to_string();
+                }
+                "DELETE" => { store.remove(rest); }
+                _=> {}
+            }
         }
     }
 }
