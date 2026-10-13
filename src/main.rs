@@ -33,6 +33,7 @@ fn load() -> HashMap<String, String> {
             }
         }
     }
+    store
 }
 
 async fn get_key(State(db): State<Db>, Path(key):  Path<String>) -> Result<String, StatusCode> {
@@ -44,21 +45,21 @@ async fn get_key(State(db): State<Db>, Path(key):  Path<String>) -> Result<Strin
 }
 
 async fn set_key(State(db): State<Db>, body: String) -> Result<&'static str, StatusCode> {
-    match body.split_once('=') {
+    match body.split_once('='){
         Some((key, value)) => {
-            db.lock().unwrap().insert(key.to_string(), value.to_string());
+            let mut store = db.lock().unwrap();
+            append(&format!("SET {} {}", key, value));
+            store.insert(key.to_string(), value.to_string());
             Ok("OK")
         }
-        None => Err(StatusCode::BAD_REQUEST),
+        None => Err(StatusCode::BAD_REQUEST), 
     }
-}
 
+}
 
 #[tokio::main]
 async fn main() {
-    let db: Db = Arc::new(Mutex::new(HashMap::new()));
-    db.lock().unwrap().insert("name".to_string(), "lewis".to_string());
-
+    let db: Db = Arc::new(Mutex::new(load()));
 
    let app = Router::new()
         .route("/", get(|| async { "Hello, world!"}))
