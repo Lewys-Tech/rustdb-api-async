@@ -17,7 +17,7 @@ fn append(entry: &str) {
 
 fn load() -> HashMap<String, String> {
     let mut store = HashMap::new();
-    if let Ok(content) = std::fs::read_to_string("db_log") {
+    if let Ok(content) = std::fs::read_to_string("db.log") {
         for line in content.lines() {
             let mut parts = line.splitn(2, ' ');
             let op = parts.next().unwrap_or("");
@@ -27,6 +27,7 @@ fn load() -> HashMap<String, String> {
                     let mut p = rest.splitn(2, ' ');
                     let key = p.next().unwrap_or("").to_string();
                     let value = p.next().unwrap_or("").to_string();
+                    store.insert(key, value);
                 }
                 "DELETE" => { store.remove(rest); }
                 _=> {}
@@ -47,6 +48,9 @@ async fn get_key(State(db): State<Db>, Path(key):  Path<String>) -> Result<Strin
 async fn set_key(State(db): State<Db>, body: String) -> Result<&'static str, StatusCode> {
     match body.split_once('='){
         Some((key, value)) => {
+            if key.is_empty()  || key.contains(char::is_whitespace)  || value.contains('\n') {
+                return Err(StatusCode::BAD_REQUEST);
+            }
             let mut store = db.lock().unwrap();
             append(&format!("SET {} {}", key, value));
             store.insert(key.to_string(), value.to_string());
