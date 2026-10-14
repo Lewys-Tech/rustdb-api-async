@@ -1,5 +1,5 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
-use axum::{extract::{Path, State}, http::StatusCode,routing::{get, post}, Router};
+use axum::{extract::{Path, State}, http::StatusCode,routing::{delete,get, post}, Router};
 use std::fs::OpenOptions;
 use std::io::Write;
 
@@ -61,6 +61,17 @@ async fn set_key(State(db): State<Db>, body: String) -> Result<&'static str, Sta
 
 }
 
+async fn delete_key(State(db): State<Db>, Path(key): Path<String>) -> StatusCode {
+    let mut store = db.lock().unwrap();
+    if store.contains_key(&key) {
+        append(&format!("DELETE {}", key));
+        store.remove(&key);
+        StatusCode::NO_CONTENT
+    } else {
+        StatusCode::NOT_FOUND
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let db: Db = Arc::new(Mutex::new(load()));
@@ -69,6 +80,7 @@ async fn main() {
         .route("/", get(|| async { "Hello, world!"}))
         .route("/get/{key}", get(get_key))
         .route("/set", post(set_key))
+        .route("/delete/{key}", delete(delete_key))
         .with_state(db);
 
 
